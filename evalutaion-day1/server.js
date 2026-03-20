@@ -13,23 +13,25 @@ const server = createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         return res.end('Bienvenue sur l\'API de gestion de livres pour acceder a la liste des livres tapez /books, pour acceder a un livre specifique tapez /books/id, pour creer un livre tapez /books en POST et le corps de la requete doit contenir les champs title, author et year');
     }
-    if (method === 'GET' && url === '/books') {
-        return getBooks(req, res);
+   
+    if (method === 'GET' && url.startsWith('/books')) {
+        
+        // Attention : il faut quand même différencier /books de /books/1
+        // On vérifie s'il y a un ID après le slash
+        const bookIdMatch = url.match(/^\/books\/(\d+)$/);
+        
+        if (bookIdMatch) {
+            req.params = { id: bookIdMatch[1] };
+            return getBookById(req, res);
+        } else {
+            // C'est la route générale /books (avec ou sans ?)
+            return getBooks(req, res);
+        }
     }
 
     if (method === 'POST' && url === '/books') {
         // On appelle notre nouvelle fonction
         return createBook(req, res);
-    }
-
-    // 2. Route dynamique (avec ID)
-    // On vérifie si l'URL correspond au pattern /books/ suivi de chiffres
-    const bookIdMatch = url.match(/^\/books\/(\d+)$/); 
-    
-    if (method === 'GET' && bookIdMatch) {
-        // On récupère l'ID capturé par la parenthèse dans le regex
-        req.params = { id: bookIdMatch[1] }; 
-        return getBookById(req, res);
     }
 
     if (method === 'DELETE'&& bookIdMatch) {

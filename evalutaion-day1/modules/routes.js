@@ -2,15 +2,35 @@
 import { readDB, writeDB } from './db.js';
 
 const getBooks = async (req, res) => {
-    // lecture de fichier db.json et retourner dans une variable books
-    const books = await readDB();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify( {
-        success: true,
-        count: books.length,
-        data: books
-    }));
+    try {
+        // 1. Analyser l'URL pour extraire les paramètres de recherche
+        // On passe une base bidon "http://localhost" car l'objet URL en a besoin
+        const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+        const availableParam = parsedUrl.searchParams.get('available');
 
+        // 2. Lire la base de données
+        const db = await readDB();
+        let filteredBooks = db.books;
+
+        // 3. Appliquer le filtre si le paramètre "available" est présent
+        if (availableParam !== null) {
+            // Attention : le paramètre arrive sous forme de chaîne "true" ou "false"
+            const isAvailable = availableParam === 'true';
+            filteredBooks = db.books.filter(book => book.available === isAvailable);
+        }
+
+        // 4. Envoyer la réponse
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            success: true,
+            count: filteredBooks.length,
+            data: filteredBooks
+        }));
+
+    } catch (error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: "Erreur lors de la récupération" }));
+    }
 }
 
 const getBookById = async (req, res) => {
